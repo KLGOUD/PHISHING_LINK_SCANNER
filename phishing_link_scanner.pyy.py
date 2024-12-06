@@ -1,84 +1,74 @@
 import re
-import requests
 import validators
-import tldextract
+from urllib.parse import urlparse
 
-# Function to validate the URL format
-def validate_url(url):
-    if validators.url(url):
-        return True
-    else:
-        return False
+# List of suspicious patterns
+suspicious_keywords = [
+    "secure", "login", "account", "verify", "payment", "banking", "prize", "support",
+    "alert", "claim", "confirmation", "update", "verification", "tracking", "free"
+]
 
-# Function to check if the URL uses an IP address
-def is_ip_url(url):
-    ip_pattern = re.compile(r"^(http|https):\/\/(\d{1,3}\.){3}\d{1,3}(:\d+)?(\/.*)?$")
-    return bool(ip_pattern.match(url))
-
-# Function to extract domain details
-def extract_domain(url):
-    extracted = tldextract.extract(url)
-    return f"{extracted.domain}.{extracted.suffix}"
-
-# Heuristic-based checks for phishing
-def heuristic_checks(url):
-    phishing_keywords = ["login", "verify", "update", "secure", "account", "bank", "free", "gift"]
-    if any(keyword in url.lower() for keyword in phishing_keywords):
+# Function to check for typos or suspicious patterns
+def check_for_typos(url):
+    common_typos = ["0", "1", "-", "_", ".com"]
+    if any(url.count(char) > 2 for char in common_typos):
         return True
     return False
 
-# Function to check URL using a blacklist API
-def check_blacklist(url):
-    # Example with Google Safe Browsing API
-    api_key = "your_google_safe_browsing_api_key"
-    endpoint = "https://safebrowsing.googleapis.com/v4/threatMatches:find"
-    
-    headers = {
-        "Content-Type": "application/json"
-    }
-    payload = {
-        "client": {
-            "clientId": "your_client_id",
-            "clientVersion": "1.0"
-        },
-        "threatInfo": {
-            "threatTypes": ["MALWARE", "SOCIAL_ENGINEERING", "UNWANTED_SOFTWARE"],
-            "platformTypes": ["ANY_PLATFORM"],
-            "threatEntryTypes": ["URL"],
-            "threatEntries": [{"url": url}]
-        }
-    }
+# Function to check for HTTPS
+def check_https(url):
+    if not url.startswith("https://"):
+        return True
+    return False
 
-    response = requests.post(endpoint, headers=headers, json=payload)
-    if response.status_code == 200:
-        result = response.json()
-        if "matches" in result:
-            return True  # URL is blacklisted
-    return False  # URL is safe
+# Function to check for suspicious domains
+def check_domain(url):
+    domain = urlparse(url).netloc
+    if domain.startswith("www."):
+        domain = domain[4:]
+    domain_parts = domain.split(".")
+    if len(domain_parts) > 3:  # Long subdomain chains
+        return True
+    if any(keyword in domain for keyword in suspicious_keywords):
+        return True
+    return False
 
-# Main function to scan a URL
+# Function to check for shortened URLs
+def check_shortened_url(url):
+    shortened_domains = ["bit.ly", "tinyurl.com", "t.co", "goo.gl", "is.gd", "buff.ly", "ow.ly"]
+    domain = urlparse(url).netloc
+    if domain in shortened_domains:
+        return True
+    return False
+
+# Main function to scan the URL
 def scan_url(url):
-    if not validate_url(url):
-        return "Invalid URL format."
-
-    print("Scanning URL...")
+    if not validators.url(url):
+        return {"status": "Invalid URL", "reason": "The input is not a valid URL."}
     
-    if is_ip_url(url):
-        return "Suspicious: URL contains an IP address instead of a domain name."
+    reasons = []
+    if check_for_typos(url):
+        reasons.append("URL contains typos or suspicious patterns (e.g., 'g00gle' instead of 'google').")
+    if check_https(url):
+        reasons.append("URL does not use HTTPS (secure protocol).")
+    if check_domain(url):
+        reasons.append("Domain or subdomain looks suspicious.")
+    if check_shortened_url(url):
+        reasons.append("URL uses a shortened domain, which can obscure the actual destination.")
 
-    domain = extract_domain(url)
-    print(f"Domain Extracted: {domain}")
+    if reasons:
+        return {"status": "Suspicious URL", "reason": reasons}
+    return {"status": "Legitimate URL", "reason": "No suspicious patterns detected."}
 
-    if heuristic_checks(url):
-        return "Suspicious: URL contains phishing keywords."
-
-    if check_blacklist(url):
-        return "Malicious: URL is listed in the blacklist."
-
-    return "Safe: URL passed all checks."
-
-# Test the scanner
+# User input
 if __name__ == "__main__":
-    url_to_scan = input("Enter the URL to scan: ").strip()
-    result = scan_url(url_to_scan)
-    print(f"Scan Result: {result}")
+    print("=== Phishing URL Scanner ===")
+    url = input("Enter a URL to scan: ").strip()
+    result = scan_url(url)
+    print(f"\nStatus: {result['status']}")
+    if isinstance(result["reason"], list):
+        print("Reasons:")
+        for reason in result["reason"]:
+            print(f"- {reason}")
+    else:
+        print(f"Reason: {result['reason']}")
