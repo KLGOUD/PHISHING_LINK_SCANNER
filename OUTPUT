@@ -1,0 +1,9 @@
+OUTPUT :
+PS C:\Users\latha\.vscode\extensions\ms-python.debugpy-2024.10.0-win32-x64\bundled\libs\debugpy\launcher>  c:; cd 'c:\Users\latha\.vscode\extensions\ms-python.debugpy-2024.10.0-win32-x64\bundled\libs\debugpy\launcher'; & 'c:\Users\latha\anaconda3\python.exe' 'c:\Users\latha\.vscode\extensions\ms-python.debugpy-2024.12.0-win32-x64\bundled\libs\debugpy\adapter/../..\debugpy\launcher' '58032' '--' 'C:\Users\latha\.vscode\extensions\ms-python.debugpy-2024.10.0-win32-x64\bundled\libs\debugpy\launcher\phishing_link_scanner.py'
+=== Phishing URL Scanner ===
+Enter a URL to scan: http://adobeflash-player-install.com/
+
+Status: Suspicious URL
+Reasons:
+- URL does not use HTTPS (secure protocol).
+PS C:\Users\latha\.vscode\extensions\ms-python.debugpy-2024.10.0-win32-x64\bundled\libs\debugpy\launcher>
